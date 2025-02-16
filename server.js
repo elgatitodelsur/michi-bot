@@ -15,7 +15,7 @@ app.post("/ejecutar", async (req, res) => {
 
     let browser;
     try {
-        browser = await chromium.launch({ headless: true });
+        browser = await chromium.launch({ args: ['--no-sandbox'] });
         const page = await browser.newPage();
         
         const url = `https://www.savethevideo.com/es/converter?url=www.dailymotion.com%2Fvideo%2F${videoId}`;
