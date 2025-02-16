@@ -2,6 +2,7 @@ const express = require("express");
 const { chromium } = require("playwright");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -14,6 +15,7 @@ app.post("/ejecutar", async (req, res) => {
     if (!videoId) return res.status(400).json({ error: "Falta videoId" });
 
     let browser;
+
     try {
         browser = await chromium.launch({ args: ['--no-sandbox'] });
         const page = await browser.newPage();
@@ -29,62 +31,43 @@ app.post("/ejecutar", async (req, res) => {
             console.log("✅ Botón 'Comienzo' encontrado");
             await boton.click();
         } else {
-            console.log("❌ Botón 'Comienzo' no encontrado");
-            await browser.close();
-            return res.status(500).json({ error: "El botón 'Comienzo' no está en la página" });
+            throw new Error("El botón 'Comienzo' no está en la página");
         }
         
         // Esperar hasta que el enlace "Convertir a MP3" sea visible y clickeable
         await page.waitForSelector("a:text('Convertir a MP3')", { timeout: 60000 });
         const mp3LinkLocator = await page.locator("a:text('Convertir a MP3')");
 
-        // Si el enlace de "Convertir a MP3" está presente, hacer clic
-        // Si el enlace de "Convertir a MP3" está presente, hacer clic
-if (await mp3LinkLocator.count() > 0) {
-    console.log("✅ Enlace 'Convertir a MP3' encontrado");
-    await mp3LinkLocator.click();
-} else {
-    console.log("❌ Enlace 'Convertir a MP3' no encontrado");
-    await browser.close();
-    return res.status(500).json({ error: "Enlace 'Convertir a MP3' no encontrado" });
-}
-
-// Ahora esperamos a que aparezca el enlace final de descarga
-try {
-    await page.waitForSelector("a:has-text('Descargar MP3')", { timeout: 60000 });
-    console.log("✅ Enlace 'Descargar MP3' detectado en la página");
-
-    // Buscar el enlace de descarga real
-    const downloadLinkLocator = await page.locator("a:has-text('Descargar MP3')");
-    const downloadUrl = await downloadLinkLocator.getAttribute("href");
-
-    if (downloadUrl) {
-        console.log("✅ URL de descarga obtenida:", downloadUrl);
-    } else {
-        console.log("❌ No se encontró una URL en el enlace 'Descargar MP3'");
-    }
-
-    await browser.close();
-
-    if (!downloadUrl) {
-        return res.status(500).json({ error: "No se encontró el enlace de descarga" });
-    }
-
-    res.json({ status: "OK", downloadUrl });
-
-} catch (error) {
-    console.error("❌ Tiempo de espera agotado o error al buscar 'Descargar MP3':", error.message);
-    await browser.close();
-    return res.status(500).json({ error: "No se pudo detectar el enlace 'Descargar MP3' a tiempo" });
-}
-        
+        if (await mp3LinkLocator.count() > 0) {
+            console.log("✅ Enlace 'Convertir a MP3' encontrado");
+            await mp3LinkLocator.click();
+        } else {
+            throw new Error("Enlace 'Convertir a MP3' no encontrado");
         }
 
+        // Ahora esperamos a que aparezca el enlace final de descarga
+        await page.waitForSelector("a:has-text('Descargar MP3')", { timeout: 60000 });
+        console.log("✅ Enlace 'Descargar MP3' detectado en la página");
+
+        // Buscar el enlace de descarga real
+        const downloadLinkLocator = await page.locator("a:has-text('Descargar MP3')");
+        const downloadUrl = await downloadLinkLocator.getAttribute("href");
+
+        if (!downloadUrl) {
+            throw new Error("No se encontró la URL de descarga");
+        }
+
+        console.log("✅ URL de descarga obtenida:", downloadUrl);
         res.json({ status: "OK", downloadUrl });
+
     } catch (error) {
-        console.error("Error:", error);
-        if (browser) await browser.close();
+        console.error("❌ Error:", error.message);
         res.status(500).json({ error: error.message });
+
+    } finally {
+        if (browser) {
+            await browser.close();
+        }
     }
 });
 
@@ -93,6 +76,7 @@ app.get("/", (req, res) => {
 });
 
 app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
+
 
 
 
