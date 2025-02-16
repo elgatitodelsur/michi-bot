@@ -21,9 +21,16 @@ app.post("/ejecutar", async (req, res) => {
         const url = `https://www.savethevideo.com/es/converter?url=www.dailymotion.com%2Fvideo%2F${videoId}`;
         await page.goto(url, { waitUntil: "networkidle" });
         
-        await page.locator("button:text('Comienzo')").click().catch(() => {
-            console.log("Error o botón no encontrado");
-        });
+        await page.waitForTimeout(5000); // Esperar un poco antes de buscar el botón
+        const boton = await page.locator("button:text('Comienzo')");
+        if (await boton.count() === 0) {
+            console.log("❌ Botón 'Comienzo' no encontrado");
+            await browser.close();
+            return res.status(500).json({ error: "El botón 'Comienzo' no está en la página" });
+        } else {
+            console.log("✅ Botón 'Comienzo' encontrado");
+            await boton.click();
+        }
         
         await page.waitForSelector("a:text('Convertir a MP3')", { timeout: 30000 });
         const downloadUrl = await page.locator("a:text('Convertir a MP3')").getAttribute("href");
@@ -47,3 +54,4 @@ app.get("/", (req, res) => {
 });
 
 app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
+
