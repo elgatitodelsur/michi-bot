@@ -18,7 +18,10 @@ app.post("/ejecutar", async (req, res) => {
         browser = await chromium.launch({ args: ['--no-sandbox'] });
         const page = await browser.newPage();
         
+        // Log para mostrar la URL completa que se va a intentar acceder
         const url = `https://www.savethevideo.com/es/converter?url=www.dailymotion.com%2Fvideo%2F${videoId}`;
+        console.log("URL que se está intentando acceder:", url);  // Log aquí
+
         await page.goto(url, { waitUntil: "networkidle" });
         
         await page.waitForTimeout(5000); // Esperar un poco antes de buscar el botón
@@ -54,4 +57,5 @@ app.get("/", (req, res) => {
 });
 
 app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
+
 
