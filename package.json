@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
+    "preinstall": "npx playwright install",  // Este es el nuevo script agregado
     "start": "node server.js"
   },
   "dependencies": {
