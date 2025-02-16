@@ -62,5 +62,12 @@ app.post("/ejecutar", async (req, res) => {
     }
 });
 
+app.get("/", (req, res) => {
+    res.json({ status: "Server running" });
+});
+
+app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
+
+
 
 
