@@ -39,26 +39,45 @@ app.post("/ejecutar", async (req, res) => {
         const mp3LinkLocator = await page.locator("a:text('Convertir a MP3')");
 
         // Si el enlace de "Convertir a MP3" está presente, hacer clic
-        if (await mp3LinkLocator.count() > 0) {
-            console.log("✅ Enlace 'Convertir a MP3' encontrado");
-            await mp3LinkLocator.click();
-        } else {
-            console.log("❌ Enlace 'Convertir a MP3' no encontrado");
-            await browser.close();
-            return res.status(500).json({ error: "Enlace 'Convertir a MP3' no encontrado" });
-        }
+        // Si el enlace de "Convertir a MP3" está presente, hacer clic
+if (await mp3LinkLocator.count() > 0) {
+    console.log("✅ Enlace 'Convertir a MP3' encontrado");
+    await mp3LinkLocator.click();
+} else {
+    console.log("❌ Enlace 'Convertir a MP3' no encontrado");
+    await browser.close();
+    return res.status(500).json({ error: "Enlace 'Convertir a MP3' no encontrado" });
+}
 
-        // Ahora esperamos a que aparezca el enlace final de descarga
-        await page.waitForSelector("a:text('Descargar MP3')", { timeout: 60000 });
+// Ahora esperamos a que aparezca el enlace final de descarga
+try {
+    await page.waitForSelector("a:has-text('Descargar MP3')", { timeout: 60000 });
+    console.log("✅ Enlace 'Descargar MP3' detectado en la página");
 
-        // Buscar el enlace de descarga real
-        const downloadLinkLocator = await page.locator("a:text('Descargar MP3')");
-        const downloadUrl = await downloadLinkLocator.getAttribute("href");
+    // Buscar el enlace de descarga real
+    const downloadLinkLocator = await page.locator("a:has-text('Descargar MP3')");
+    const downloadUrl = await downloadLinkLocator.getAttribute("href");
 
-        await browser.close();
+    if (downloadUrl) {
+        console.log("✅ URL de descarga obtenida:", downloadUrl);
+    } else {
+        console.log("❌ No se encontró una URL en el enlace 'Descargar MP3'");
+    }
 
-        if (!downloadUrl) {
-            return res.status(500).json({ error: "No se encontró el enlace de descarga" });
+    await browser.close();
+
+    if (!downloadUrl) {
+        return res.status(500).json({ error: "No se encontró el enlace de descarga" });
+    }
+
+    res.json({ status: "OK", downloadUrl });
+
+} catch (error) {
+    console.error("❌ Tiempo de espera agotado o error al buscar 'Descargar MP3':", error.message);
+    await browser.close();
+    return res.status(500).json({ error: "No se pudo detectar el enlace 'Descargar MP3' a tiempo" });
+}
+        
         }
 
         res.json({ status: "OK", downloadUrl });
