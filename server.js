@@ -1,13 +1,3 @@
-const express = require("express");
-const { chromium } = require("playwright");
-const cors = require("cors");
-const bodyParser = require("body-parser");
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.use(cors());
-app.use(bodyParser.json());
-
 app.post("/ejecutar", async (req, res) => {
     console.log("Recibida petición:", req.body);
     const { videoId } = req.body;
@@ -18,10 +8,7 @@ app.post("/ejecutar", async (req, res) => {
         browser = await chromium.launch({ args: ['--no-sandbox'] });
         const page = await browser.newPage();
         
-        // Log para mostrar la URL completa que se va a intentar acceder
         const url = `https://www.savethevideo.com/es/converter?url=www.dailymotion.com%2Fvideo%2F${videoId}`;
-        console.log("URL que se está intentando acceder:", url);  // Log aquí
-
         await page.goto(url, { waitUntil: "networkidle" });
         
         await page.waitForTimeout(5000); // Esperar un poco antes de buscar el botón
@@ -35,8 +22,21 @@ app.post("/ejecutar", async (req, res) => {
             await boton.click();
         }
         
+        // Esperar el selector del enlace "Convertir a MP3"
         await page.waitForSelector("a:text('Convertir a MP3')", { timeout: 30000 });
-        const downloadUrl = await page.locator("a:text('Convertir a MP3')").getAttribute("href");
+        
+        const mp3LinkLocator = await page.locator("a:text('Convertir a MP3')");
+        const mp3LinkCount = await mp3LinkLocator.count();
+        
+        if (mp3LinkCount === 0) {
+            console.log("❌ Enlace 'Convertir a MP3' no encontrado");
+            await browser.close();
+            return res.status(500).json({ error: "Enlace 'Convertir a MP3' no encontrado" });
+        } else {
+            console.log("✅ Enlace 'Convertir a MP3' encontrado");
+        }
+        
+        const downloadUrl = await mp3LinkLocator.getAttribute("href");
         
         await browser.close();
         
@@ -52,10 +52,5 @@ app.post("/ejecutar", async (req, res) => {
     }
 });
 
-app.get("/", (req, res) => {
-    res.json({ status: "Server running" });
-});
-
-app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
 
 
