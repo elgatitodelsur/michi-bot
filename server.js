@@ -32,11 +32,8 @@ app.post("/ejecutar", async (req, res) => {
             await boton.click();
         }
 
-        // Selector más robusto para "Descargar MP3" (ignora el tamaño dinámico)
-        await page.waitForFunction(() => {
-            const link = document.querySelector('a >> text="Descargar MP3"');
-            return link && link.href;
-        }, { timeout: 60000 });
+        // Esperar al selector "Descargar MP3" (usando el selector corregido)
+        await page.waitForSelector('a >> text="Descargar MP3"', { timeout: 60000 });
 
         const mp3LinkLocator = page.locator('a >> text="Descargar MP3"');
         const downloadUrl = await mp3LinkLocator.getAttribute("href");
