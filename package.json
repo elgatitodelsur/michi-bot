@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "preinstall": "npx playwright install", 
-    "start": "node server.js"
+    "start": "npx playwright install && node server.js"
   },
   "dependencies": {
     "body-parser": "^1.20.3",
