@@ -1,3 +1,13 @@
+const express = require("express");
+const { chromium } = require("playwright");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(cors());
+app.use(bodyParser.json());
+
 app.post("/ejecutar", async (req, res) => {
     console.log("Recibida petición:", req.body);
     const { videoId } = req.body;
