@@ -17,43 +17,37 @@ app.post("/ejecutar", async (req, res) => {
     try {
         browser = await chromium.launch({ args: ['--no-sandbox'] });
         const page = await browser.newPage();
-        
+
         const url = `https://www.savethevideo.com/es/converter?url=www.dailymotion.com%2Fvideo%2F${videoId}`;
         await page.goto(url, { waitUntil: "networkidle" });
-        
-        await page.waitForTimeout(5000); // Esperar un poco antes de buscar el botón
+
+        await page.waitForTimeout(5000);
         const boton = await page.locator("button:text('Comienzo')");
         if (await boton.count() === 0) {
-            console.log("❌ Botón 'Comienzo' no encontrado");
+            console.error("❌ Botón 'Comienzo' no encontrado");
             await browser.close();
             return res.status(500).json({ error: "El botón 'Comienzo' no está en la página" });
         } else {
             console.log("✅ Botón 'Comienzo' encontrado");
             await boton.click();
         }
-        
-        // Esperar el selector del enlace "Convertir a MP3"
-        await page.waitForSelector("a:text('Convertir a MP3')", { timeout: 30000 });
-        
-        const mp3LinkLocator = await page.locator("a:text('Convertir a MP3')");
-        const mp3LinkCount = await mp3LinkLocator.count();
-        
-        if (mp3LinkCount === 0) {
-            console.log("❌ Enlace 'Convertir a MP3' no encontrado");
-            await browser.close();
-            return res.status(500).json({ error: "Enlace 'Convertir a MP3' no encontrado" });
-        } else {
-            console.log("✅ Enlace 'Convertir a MP3' encontrado");
-        }
-        
+
+        // Selector más robusto para "Descargar MP3" (ignora el tamaño dinámico)
+        await page.waitForFunction(() => {
+            const link = document.querySelector('a >> text="Descargar MP3"');
+            return link && link.href;
+        }, { timeout: 60000 });
+
+        const mp3LinkLocator = page.locator('a >> text="Descargar MP3"');
         const downloadUrl = await mp3LinkLocator.getAttribute("href");
-        
+
         await browser.close();
-        
+
         if (!downloadUrl) {
+            console.error("❌ No se encontró el enlace de descarga (después de esperar)");
             return res.status(500).json({ error: "No se encontró el enlace de descarga" });
         }
-        
+
         res.json({ status: "OK", downloadUrl });
     } catch (error) {
         console.error("Error:", error);
@@ -67,7 +61,6 @@ app.get("/", (req, res) => {
 });
 
 app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
-
 
 
 
